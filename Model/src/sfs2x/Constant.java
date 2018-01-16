@@ -3,6 +3,8 @@ package sfs2x;
 import com.smartfoxserver.v2.entities.Room;
 
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class Constant {
@@ -16,17 +18,13 @@ public class Constant {
 
     //lock
     public static final String ROOM_NAME_LOCK = "room_name_lock";
-    public static final String JOIN_GROUP_LOCK = "join_group_lock";
 
-
-    //开始游戏的等待时间
-    public static final int WAIT_START = 15;
-    //玩家下注等待时间
-    public static final int BET_TIME = 20;
-
-    public static final int DEFAULT_SCORE = 3000;
-
-    public static final long DELAY_TIME_VS = 5000;
-    public static final long DELAY_TIME_SELTT = 3000;
+    public static final Map<Integer,Integer> TDK_CARD_COUNT ;
+    static {
+        TDK_CARD_COUNT = new HashMap<>();
+        TDK_CARD_COUNT.put(8,1);
+        TDK_CARD_COUNT.put(16,2);
+        TDK_CARD_COUNT.put(40,3);
+    }
 
 }
