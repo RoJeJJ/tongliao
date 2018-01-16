@@ -1,0 +1,8 @@
+<component name="ArtifactManager">
+  <artifact type="jar" name="zoneExtension">
+    <output-path>$PROJECT_DIR$/extensions/zoneExt</output-path>
+    <root id="archive" name="zoneExtension.jar">
+      <element id="module-output" name="SFS2X_zhajinhua1" />
+    </root>
+  </artifact>
+</component>

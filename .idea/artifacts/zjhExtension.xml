@@ -1,0 +1,8 @@
+<component name="ArtifactManager">
+  <artifact type="jar" name="zjhExtension">
+    <output-path>$PROJECT_DIR$/extensions/zjhExt</output-path>
+    <root id="archive" name="zjhExtension.jar">
+      <element id="module-output" name="zjhExt" />
+    </root>
+  </artifact>
+</component>
