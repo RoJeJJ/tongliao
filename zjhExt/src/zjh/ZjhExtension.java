@@ -92,11 +92,6 @@ public class ZjhExtension extends IExtension {
     public void readyRequest(Player p) {
         super.readyRequest(p);
         if (table.roundStart) {
-            table.initStartGame();
-            ISFSObject object = new SFSObject();
-            object.putInt("c", table.currentCount);
-            send("GStart", object, room.getUserList());
-
             addTableFloor();
         }
     }
@@ -235,8 +230,8 @@ public class ZjhExtension extends IExtension {
                 table.winner.tlw += bet;
             }
         }
+        DBUtil.gameRecord(room);
         sendSettle();
-
         if (table.cardRoom){
             if (table.currentCount >= table.count)
                 getApi().removeRoom(room);
@@ -587,11 +582,6 @@ public class ZjhExtension extends IExtension {
         boolean leaved = super.leaveRequest(p);
         if (leaved){
             if (table.roundStart) {
-                table.initStartGame();
-                ISFSObject object = new SFSObject();
-                object.putInt("c", table.currentCount);
-                send("GStart", object, room.getUserList());
-
                 addTableFloor();
             }
         }

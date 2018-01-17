@@ -11,6 +11,7 @@ import com.smartfoxserver.v2.exceptions.SFSCreateRoomException;
 import com.smartfoxserver.v2.extensions.BaseClientRequestHandler;
 import sfs2x.Constant;
 import sfs2x.master.Player;
+import sfs2x.master.tdk.TdkTable;
 import sfs2x.master.zjh.ZjhTable;
 import sfs2x.utils.DBUtil;
 import sfs2x.utils.Utils;
@@ -111,9 +112,12 @@ public class CreateRoomHandler extends BaseClientRequestHandler {
                                 roomSettings.setAutoRemoveMode(SFSRoomRemoveMode.NEVER_REMOVE);
                                 roomSettings.setDynamic(true);
                                 roomSettings.setGame(true);
-                                roomSettings.setMaxUsers(6);
+                                roomSettings.setMaxUsers(5);
                                 roomSettings.setMaxSpectators(0);
-
+                                Map<Object,Object> properties = new HashMap<>();
+                                TdkTable table = new TdkTable(1,false,true,player.uid,5,c,need);
+                                properties.put("t",table);
+                                roomSettings.setRoomProperties(properties);
                                 try {
                                     room = getApi().createRoom(getParentExtension().getParentZone(),roomSettings,null);
                                     err = 0;

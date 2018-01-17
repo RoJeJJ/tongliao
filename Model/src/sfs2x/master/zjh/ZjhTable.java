@@ -173,8 +173,8 @@ public class ZjhTable extends ITable {
         lastCall = 0;
         lastBlind = true;
         tableChips.clear();
-        currentCount++;
         turn = 1;
+        currentCount++;
         ZjhSeat oSeat = (ZjhSeat) getSeat(getPlayer(owner));
         if (winner != null && playSeat.contains(winner))
             banker = winner;

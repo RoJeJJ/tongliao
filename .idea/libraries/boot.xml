@@ -2,7 +2,6 @@
   <library name="boot">
     <CLASSES>
       <root url="jar://D:/Program Files/SmartFoxServer_2X/SFS2X/lib/boot.jar!/" />
-      <root url="jar://D:/Program Files/SmartFoxServer_2X/SFS2X/lib/c3p0-0.9.1.2.jar!/" />
       <root url="jar://D:/Program Files/SmartFoxServer_2X/SFS2X/lib/commons-beanutils-1.7.0.jar!/" />
       <root url="jar://D:/Program Files/SmartFoxServer_2X/SFS2X/lib/commons-collections-3.2.1.jar!/" />
       <root url="jar://D:/Program Files/SmartFoxServer_2X/SFS2X/lib/commons-dbcp-1.4.jar!/" />

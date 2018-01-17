@@ -118,7 +118,7 @@
     </profiles>
   </privilegeManager>
   <extension>
-    <name>zoneExt</name>
+    <name>zone_ext</name>
     <type>JAVA</type>
     <file>sfs2x.ZoneExt</file>
     <propertiesFile></propertiesFile>
@@ -144,8 +144,8 @@
     <driverName>com.microsoft.sqlserver.jdbc.SQLServerDriver</driverName>
     <connectionString>jdbc:sqlserver://localhost:1433;databaseName=TongLiaoDB</connectionString>
     <userName>sa</userName>
-    <password>$(%OFSFJ344OER%%gjk#EI$Ib%_$K</password>
-    <!--<password>aa123123</password>-->
+    <!--<password>$(%OFSFJ344OER%%gjk#EI$Ib%_$K</password>-->
+    <password>aa123123</password>
     <testSql>SELECT count(*) FROM user_info</testSql>
     <maxActiveConnections>10</maxActiveConnections>
     <maxIdleConnections>10</maxIdleConnections>

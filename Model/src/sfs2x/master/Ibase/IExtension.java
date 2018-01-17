@@ -48,6 +48,7 @@ public abstract class IExtension extends SFSExtension{
            }else
                DBUtil.unLockCard(table.owner,table.need);
        }
+       DBUtil.roomRecord(room);
        if (table.cardRoom && table.gameStart){
            balance();
        }
@@ -115,6 +116,10 @@ public abstract class IExtension extends SFSExtension{
                 table.roundStart = true;
         }
         if (table.roundStart){
+            table.initStartGame();
+            ISFSObject object = new SFSObject();
+            object.putInt("c", table.currentCount);
+            send("GStart", object, room.getUserList());
             if (!table.gameStart)
                 table.gameStart = true;
             for (int i = 0; i < table.playSeat.size(); i++) {
@@ -195,9 +200,12 @@ public abstract class IExtension extends SFSExtension{
             send("jr",object,p.user);
         }else {
             boolean join = true;
+            boolean cost = false;
             if (table.cardRoom && table.aa && table.owner != p.uid){
-                if (!DBUtil.lockCard(p.uid,table.need))
+                if (!DBUtil.lockCard(p.uid,table.need)) {
                     join = false;
+                }else
+                    cost = true;
             }
             if (!join){
                 object.putInt("err",6);//房卡不足
@@ -210,7 +218,8 @@ public abstract class IExtension extends SFSExtension{
                     join(p);
                 } catch (SFSJoinRoomException e) {
                     e.printStackTrace();
-                    DBUtil.unLockCard(p.uid,table.need);
+                    if (cost)
+                        DBUtil.unLockCard(p.uid,table.need);
                     object.putInt("err",7);//其他错误,加入失败
                     send("jr",object,p.user);
                 }
@@ -231,12 +240,16 @@ public abstract class IExtension extends SFSExtension{
                     getApi().leaveRoom(p.user,room);
                     Constant.offlinePlayer.remove(p.uid);
                     seat.userLeave();
+                    leaved = true;
                     ISFSObject object = new SFSObject();
                     object.putInt("uid",p.uid);
                     send("leave",object,p.user);
                     send("leave",object,room.getUserList());
-                    checkReadyToStart();
-                    leaved = true;
+                    if (table.curPerson() == 0)
+                        getApi().removeRoom(room);
+                    else {
+                        checkReadyToStart();
+                    }
                 }else {
                     if (disbander == null){
                         disbander = p;

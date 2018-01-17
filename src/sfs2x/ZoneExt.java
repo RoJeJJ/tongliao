@@ -34,6 +34,7 @@ public class ZoneExt extends SFSExtension{
         addRequestHandler("curRoom", UserCurRoomHandler.class);
         addRequestHandler("dmr", DismissRoomHandler.class);
         addRequestHandler("zz",ZhuanZengRequest.class);//转赠
+        addRequestHandler("rr", RoomRecordHandler.class);
 
         DBUtil.initDB(getParentZone().getDBManager());
     }

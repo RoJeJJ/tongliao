@@ -8,8 +8,9 @@ import sfs2x.master.Ibase.ITable;
 import sfs2x.master.Player;
 
 public class Utils {
-    public static ITable getTable(Room room){
-        return (ITable) room.getProperty("t");
+    public static <T extends ITable>T getTable(Room room){
+        Object object = room.getProperty("t");
+        return  (T) object;
     }
 
     public static Player getPlayer(User user){

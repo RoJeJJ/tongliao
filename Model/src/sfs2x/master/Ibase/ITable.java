@@ -66,6 +66,7 @@ public abstract class ITable {
      * 当局游戏中的位置
      */
     public List<ISeat> playSeat;
+    public StringBuffer record;
     /**
      *  房卡房构造方法
      * @param mod 游戏类型
@@ -82,6 +83,7 @@ public abstract class ITable {
         takeOff = false;
         uuid = UUID.randomUUID().toString();
         currentCount = 0;
+        record = new StringBuffer();
     }
 
     /**
