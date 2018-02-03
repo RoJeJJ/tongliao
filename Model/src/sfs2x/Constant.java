@@ -21,10 +21,11 @@ public class Constant {
 
     public static final Map<Integer,Integer> TDK_CARD_COUNT ;
     static {
-        TDK_CARD_COUNT = new HashMap<>();
-        TDK_CARD_COUNT.put(8,1);
-        TDK_CARD_COUNT.put(16,2);
-        TDK_CARD_COUNT.put(40,3);
+        Map<Integer,Integer> map = new HashMap<>();
+        map.put(8,1);
+        map.put(16,2);
+        map.put(40,3);
+        TDK_CARD_COUNT = map;
     }
 
 }

@@ -3,6 +3,7 @@
   <component name="SqlDialectMappings">
     <file url="file://$PROJECT_DIR$/Model/src/sfs2x/master/Ibase/IExtension.java" dialect="TSQL" />
     <file url="file://$PROJECT_DIR$/Model/src/sfs2x/utils/DBUtil.java" dialect="TSQL" />
+    <file url="file://$PROJECT_DIR$/TianDaKeng/src/tdk/TdkExtension.java" dialect="TSQL" />
     <file url="file://$PROJECT_DIR$/src/sfs2x/handler/OnLoginHandler.java" dialect="TSQL" />
   </component>
 </project>

@@ -2,9 +2,6 @@ package sfs2x;
 
 import com.smartfoxserver.v2.SmartFoxServer;
 import com.smartfoxserver.v2.core.SFSEventType;
-import com.smartfoxserver.v2.db.DBConfig;
-import com.smartfoxserver.v2.db.IDBManager;
-import com.smartfoxserver.v2.db.SFSDBManager;
 import com.smartfoxserver.v2.entities.Room;
 import com.smartfoxserver.v2.entities.User;
 import com.smartfoxserver.v2.entities.data.ISFSObject;
@@ -47,30 +44,36 @@ public class ZoneExt extends SFSExtension{
 
     @Override
     public Object handleInternalMessage(String cmdName, Object params) {
-        if (cmdName.equals("card")){
-            ISFSObject object = (ISFSObject) params;
-            long card = object.getLong("card");
-            int uid = object.getInt("uid");
-            Player p = olp.get(uid);
-            if (p != null){
-                p.card = card;
-                send("uc",object,p.user);
+        switch (cmdName) {
+            case "card": {
+                ISFSObject object = (ISFSObject) params;
+                long card = object.getLong("card");
+                int uid = object.getInt("uid");
+                Player p = olp.get(uid);
+                if (p != null) {
+                    p.card = card;
+                    send("uc", object, p.user);
+                }
+                break;
             }
-        }else if ("halt".equals(cmdName)) {
-            for (User user : getParentZone().getUserList())
-                getApi().logout(user);
-            for (Room room : getParentZone().getRoomList()) {
-                getApi().removeRoom(room);
-            }
-            SmartFoxServer.getInstance().halt();
-        }else if ("vip".equals(cmdName)){
-            ISFSObject object = (ISFSObject) params;
-            int uid = object.getInt("uid");
-            boolean vip = object.getBool("vip");
-            Player p = olp.get(uid);
-            if (p != null) {
-                p.vip = vip;
-                send("vv", object, p.user);
+            case "halt":
+                for (User user : getParentZone().getUserList())
+                    getApi().logout(user);
+                for (Room room : getParentZone().getRoomList()) {
+                    getApi().removeRoom(room);
+                }
+                SmartFoxServer.getInstance().halt();
+                break;
+            case "vip": {
+                ISFSObject object = (ISFSObject) params;
+                int uid = object.getInt("uid");
+                boolean vip = object.getBool("vip");
+                Player p = olp.get(uid);
+                if (p != null) {
+                    p.vip = vip;
+                    send("vv", object, p.user);
+                }
+                break;
             }
         }
         return null;

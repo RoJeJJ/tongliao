@@ -32,9 +32,10 @@ public class OnZoneJoinHandler extends BaseServerEventHandler{
         ((ZoneExt)getParentExtension()).olp.putIfAbsent(player.uid,player);
         send("u",player.toSFSObject(),user);
 
-//        if (player.pid == 0){
-//            send("sa",null,user);
-//        }
+        trace(player.vip);
+        if (player.pid == 0){
+            send("sa",null,user);
+        }
         if (player.vip) {
             ISFSObject object = new SFSObject();
             object.putBool("vip",true);

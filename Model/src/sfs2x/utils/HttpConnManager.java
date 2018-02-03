@@ -26,7 +26,7 @@ public class HttpConnManager {
     /**
      * 获取连接的最大等待时间
      */
-    private final static int WAIT_TIMEOUT = 60000;
+    private final static int WAIT_TIMEOUT = 5000;
     /**
      * 每个路由最大连接数
      */
@@ -34,11 +34,11 @@ public class HttpConnManager {
     /**
      * 连接超时时间
      */
-    private final static int CONNECT_TIMEOUT = 10000;
+    private final static int CONNECT_TIMEOUT = 5000;
     /**
      * 读取超时时间
      */
-    private final static int READ_TIMEOUT = 10000;
+    private final static int READ_TIMEOUT = 5000;
 
     static {
         httpParams = new BasicHttpParams();

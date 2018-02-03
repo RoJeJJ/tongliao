@@ -56,6 +56,7 @@ public class OnLoginHandler extends BaseServerEventHandler {
                         errData.addParameter("2");//token过期,请重新获取token
                         throw new SFSLoginException("token过期", errData);
                     } else {
+                        trace(jsonObject.getString("unionid").trim());
                         openid = jsonObject.getString("openid").trim();
                         nickname = jsonObject.getString("nickname").trim();
                         sex = jsonObject.getInt("sex");

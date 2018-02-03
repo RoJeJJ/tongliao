@@ -4,13 +4,15 @@ import com.smartfoxserver.v2.entities.data.ISFSObject;
 import sfs2x.master.Ibase.ISeat;
 
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 
 public class ZjhSeat extends ISeat {
     public ArrayList<Integer> hand;
     public int type;
     public int[] arr;
     public boolean seen;
-    public ArrayList<ZjhSeat> sp;
+    public Map<Integer,ArrayList<Integer>> sp;
     /**
      *  0 默认状态,1 下注状态,2跟注,3 加注,4,弃牌,5,比牌输了,6,比牌赢了
      */
@@ -21,7 +23,7 @@ public class ZjhSeat extends ISeat {
         hand = new ArrayList<>();
         chips = new ArrayList<>();
         action = 0;
-        sp = new ArrayList<>();
+        sp = new HashMap<>();
     }
 
     @Override
@@ -30,6 +32,8 @@ public class ZjhSeat extends ISeat {
         seen = false;
         chips.clear();
         action = 0;
+        sp.clear();
+        seen = false;
     }
 
     public ISFSObject toSFSObject(ZjhSeat s) {

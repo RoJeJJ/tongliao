@@ -57,6 +57,22 @@ public class DBUtil {
             close(conn,stmt,null);
         }
     }
+    public static void signOut(int uid){
+        Connection conn = null;
+        CallableStatement stmt = null;
+        try {
+            conn = getConnection();
+            if (conn != null){
+                stmt = conn.prepareCall("{call RecordSignOut(?)}");
+                stmt.setInt(1,uid);
+                stmt.execute();
+            }
+        }catch (SQLException e){
+            e.printStackTrace();
+        }finally {
+            close(conn,stmt,null);
+        }
+    }
 
     public static boolean lockCard(int uid,long card){
         Connection conn = null;
@@ -247,10 +263,14 @@ public class DBUtil {
                             for (int i=0;i<6;i++){
                                 String uidStr = "u"+i;
                                 String nickStr = "n"+i;
+                                String avatar = "a"+i;
                                 String wlStr = "wl"+i;
                                 o.putInt(uidStr,set.getInt(uidStr));
-                                o.putUtfString(nickStr,set.getString(nickStr));
+                                String nick = set.getString(nickStr);
+                                o.putUtfString(nickStr,nick == null ?"":nick);
                                 o.putInt(wlStr,set.getInt(wlStr));
+                                String a = set.getString(avatar);
+                                o.putUtfString(avatar,a == null ? "":a );
                             }
                             array.addSFSObject(o);
                         }while (set.next());

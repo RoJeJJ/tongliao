@@ -5,23 +5,24 @@ import com.smartfoxserver.v2.entities.data.ISFSObject;
 import com.smartfoxserver.v2.entities.data.SFSArray;
 import com.smartfoxserver.v2.entities.data.SFSObject;
 import com.smartfoxserver.v2.exceptions.SFSJoinRoomException;
-import org.apache.commons.lang.math.RandomUtils;
 import sfs2x.Constant;
 import sfs2x.master.Ibase.IExtension;
-import sfs2x.master.Ibase.ISeat;
 import sfs2x.master.Player;
 import sfs2x.master.zjh.ZjhSeat;
 import sfs2x.master.zjh.ZjhTable;
 import sfs2x.utils.DBUtil;
+import sfs2x.utils.Utils;
 import zjh.handler.*;
 
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.Map;
 import java.util.concurrent.ScheduledFuture;
 
 /**
  * 扎金花游戏扩展
  */
-public class ZjhExtension extends IExtension {
-    private ZjhTable table;
+public class ZjhExtension<D extends ZjhSeat,T extends ZjhTable<D>> extends IExtension<D,T> {
     private ScheduledFuture actionScheduled = null;
     private long actionRemainTime;
     private long actionStartTime;
@@ -29,10 +30,10 @@ public class ZjhExtension extends IExtension {
     @Override
     public void init() {
         super.init();
-        table = (ZjhTable) super.table;
+        table = Utils.getTable(room);
         addRequestHandler("re", ReadyRequest.class);
         addRequestHandler("lr", LeaveRoomRequest.class);
-        addRequestHandler("dis", DisbandRequest.class);
+//        addRequestHandler("dis", DisbandRequest.class);
         addRequestHandler("f", FollowRequest.class);
         addRequestHandler("r", RaiseRequest.class);
         addRequestHandler("fo",FoldRequest.class);
@@ -44,25 +45,30 @@ public class ZjhExtension extends IExtension {
 
     @Override
     public Object handleInternalMessage(String cmdName, Object params) {
-        if (cmdName.equals("jr")) {
-            Player player = (Player) params;
-            requestJoin(player);
-        }else if (cmdName.equals("off")){
-            Player p = (Player) params;
+        Player player;
+        switch (cmdName) {
+            case "jr":
+                player = (Player) params;
+                requestJoin(player);
+                break;
+            case "off":
+                Player p = (Player) params;
                 offline(p);
-        }else if (cmdName.equals("p")){
-            int uid = (int) params;
-            return table.getPlayer(uid);
-        }else if (cmdName.equals("join")){
-            synchronized (this){
-                Player player = (Player) params;
-                try {
-                    getApi().joinRoom(player.user, room, null,false, player.user.getLastJoinedRoom());
-                    join(player);
-                }catch (SFSJoinRoomException e){
-                    e.printStackTrace();
+                break;
+            case "p":
+                int uid = (int) params;
+                return table.getPlayer(uid);
+            case "join":
+                synchronized (this) {
+                    player = (Player) params;
+                    try {
+                        getApi().joinRoom(player.user, room, null, false, player.user.getLastJoinedRoom());
+                        join(player);
+                    } catch (SFSJoinRoomException e) {
+                        e.printStackTrace();
+                    }
                 }
-            }
+                break;
         }
 //        else if (cmdName.equals("leave")){
 //            Player player = (Player) params;
@@ -72,7 +78,7 @@ public class ZjhExtension extends IExtension {
         return null;
     }
     private synchronized void offline(Player p){
-        ZjhSeat seat = (ZjhSeat) table.getSeat(p);
+        D seat = table.getSeat(p);
         if (seat != null){
             seat.offline = true;
             Constant.offlinePlayer.put(p.uid,room);
@@ -89,7 +95,7 @@ public class ZjhExtension extends IExtension {
     }
 
     @Override
-    public void readyRequest(Player p) {
+    public synchronized void readyRequest(Player p) {
         super.readyRequest(p);
         if (table.roundStart) {
             addTableFloor();
@@ -97,28 +103,26 @@ public class ZjhExtension extends IExtension {
     }
 
     @Override
-    protected void reconnect(ISeat seat) {
+    protected void reconnect(D seat) {
         if (table.current != null && table.current.action == 1) {
             actionRemainTime = ACTION_WAIT_TIME - (System.currentTimeMillis() - actionStartTime);
-            sendAction(table.current, (ZjhSeat) seat);
+            sendAction(table.current, seat);
         }
     }
 
     private void addTableFloor() {
-        for (ISeat s : table.playSeat) {
-            ZjhSeat seat = (ZjhSeat) s;
-            seat.chips.add(table.floor);
+        for (D s : table.playSeat) {
+            s.chips.add(table.floor);
             table.tableChips.add(table.floor);
         }
         ISFSObject object = new SFSObject();
         object.putInt("f", table.floor);
         object.putIntArray("chip",table.tableChips);
         ISFSArray array = new SFSArray();
-        for (ISeat s:table.playSeat){
+        for (D s:table.playSeat){
             ISFSObject o = new SFSObject();
-            ZjhSeat seat = (ZjhSeat) s;
             o.putInt("uid",s.player.uid);
-            o.putIntArray("bets",seat.chips);
+            o.putIntArray("bets",s.chips);
             array.addSFSObject(o);
         }
         object.putSFSArray("u",array);
@@ -129,7 +133,7 @@ public class ZjhExtension extends IExtension {
             e.printStackTrace();
         }
         deal();
-        table.current = (ZjhSeat) table.banker.next;
+        table.current =  table.getNextActionSeat(table.current);
         userAction(table.current);
     }
 
@@ -138,19 +142,25 @@ public class ZjhExtension extends IExtension {
      */
     private void deal() {
         StringBuilder order = new StringBuilder();
-        ZjhSeat seat = (ZjhSeat) table.banker.next;
-        for (int i = 0; i < 3 * table.playSeat.size(); i++) {
-            int index = RandomUtils.nextInt(table.pokers.size());
-            int pokerNum = table.pokers.remove(index);
-            seat.hand.add(pokerNum);
-            order.append(seat.no);
-            seat = (ZjhSeat) seat.next;
+        D seat = table.getNextActionSeat(table.banker);
+        int count = table.getAvailableCount();
+        table.initCard();
+        for (int i = 0; i < 3 * count; i++) {
+            for (D s:table.playSeat){
+                if (s.action != 4 && s.action != 5){
+                    int pokerNum = table.pokers.remove(0);
+                    seat.hand.add(pokerNum);
+                    order.append(seat.no);
+                }
+                seat = table.getNextActionSeat(seat);
+            }
+
         }
         ISFSObject object = new SFSObject();
         object.putUtfString("order", order.toString());
         send("hand", object, room.getUserList());
-        for (ISeat s : table.playSeat)
-            table.analyzeType((ZjhSeat) s);
+        for (D s : table.playSeat)
+            table.analyzeType( s);
         try {
             Thread.sleep(200 * table.playSeat.size() * 3 + 100);
         } catch (InterruptedException e) {
@@ -158,7 +168,7 @@ public class ZjhExtension extends IExtension {
         }
     }
 
-    private void userAction(ZjhSeat s) {
+    private void userAction(D s) {
         if (s == table.getNextActionSeat(s)) { //场上只有一个玩家了,该玩家胜出
             table.winner = s;
             showHand();
@@ -189,21 +199,22 @@ public class ZjhExtension extends IExtension {
     }
 
     private void showHand() {
-        for (ISeat s:table.playSeat){
-            ZjhSeat seat = (ZjhSeat) s;
+        for (D s:table.playSeat){
             ISFSObject object = new SFSObject();
             object.putInt("oid",table.winner.player.uid);
             ISFSArray array = new SFSArray();
-            for (ZjhSeat se:seat.sp){
+            Iterator<Map.Entry<Integer,ArrayList<Integer>>> it = s.sp.entrySet().iterator();
+            while (it.hasNext()){
+                Map.Entry<Integer,ArrayList<Integer>> entry = it.next();
                 ISFSObject o = new SFSObject();
-                o.putInt("uid",se.player.uid);
-                o.putIntArray("hand",se.hand);
+                o.putInt("uid",entry.getKey());
+                o.putIntArray("hand",entry.getValue());
                 array.addSFSObject(o);
             }
-            if (seat.sp.size() > 0){
+            if (s.sp.size() > 0){
                 ISFSObject o = new SFSObject();
                 o.putInt("uid",s.player.uid);
-                o.putIntArray("hand", seat.hand);
+                o.putIntArray("hand", s.hand);
                 array.addSFSObject(o);
             }
             object.putSFSArray("u",array);
@@ -218,13 +229,12 @@ public class ZjhExtension extends IExtension {
     }
 
     private void settlement(){
-        for (ISeat s:table.playSeat){
-            ZjhSeat seat = (ZjhSeat) s;
-            if (seat != table.winner){
-                int bet = seat.allBet();
-                seat.score -= bet;
-                seat.lw -= bet;
-                seat.tlw -= bet;
+        for (D s:table.playSeat){
+            if (s != table.winner){
+                int bet = s.allBet();
+                s.score -= bet;
+                s.lw -= bet;
+                s.tlw -= bet;
                 table.winner.score += bet;
                 table.winner.lw += bet;
                 table.winner.tlw += bet;
@@ -244,7 +254,7 @@ public class ZjhExtension extends IExtension {
         ISFSObject object = new SFSObject();
         object.putInt("wid",table.winner.player.uid);
         ISFSArray array = new SFSArray();
-        for (ISeat s: table.playSeat){
+        for (D s: table.playSeat){
             ISFSObject o = new SFSObject();
             o.putInt("uid",s.player.uid);
             if (table.cardRoom){
@@ -262,14 +272,13 @@ public class ZjhExtension extends IExtension {
 
     private void startNewTurn() {
         table.turn++;
-        for (ISeat s : table.playSeat) {
-            ZjhSeat seat = (ZjhSeat) s;
-            if (seat.action != 4 && seat.action != 5)
-                seat.initNewTurn();
+        for (D s : table.playSeat) {
+            if (s.action != 4 && s.action != 5)
+                s.initNewTurn();
         }
     }
 
-    private void sendAction(ZjhSeat seat,ZjhSeat s) {
+    private void sendAction(D seat,D s) {
         ISFSObject object = new SFSObject();
         object.putInt("uid", seat.player.uid);
         object.putInt("turn", table.turn);
@@ -293,7 +302,7 @@ public class ZjhExtension extends IExtension {
      * @param p 玩家
      */
     public synchronized void followRequest(Player p) {
-        ZjhSeat seat = (ZjhSeat) table.getSeat(p);
+        D seat = table.getSeat(p);
         if (seat != null && table.roundStart && seat.action == 1 && table.turn <= ZjhTable.MAX_TURN) {
             if (table.cardRoom) { //房卡房
                 if (seat.seen) { //看牌了
@@ -362,7 +371,7 @@ public class ZjhExtension extends IExtension {
      * @param p 玩家的位置
      */
     public synchronized void foldRequest(Player p) {
-        ZjhSeat seat = (ZjhSeat) table.getSeat(p);
+        D seat = table.getSeat(p);
         if (seat != null && table.roundStart) {
             if (seat.action != 4 && seat.action != 5 && table.playSeat.contains(seat)) {
                 seat.action = 4;
@@ -390,7 +399,7 @@ public class ZjhExtension extends IExtension {
      * @param coin 加注的分数
      */
     public synchronized void raiseRequest(Player p, int coin) {
-        ZjhSeat seat = (ZjhSeat) table.getSeat(p);
+        D seat = table.getSeat(p);
         if (seat != null && table.roundStart && table.turn <= ZjhTable.MAX_TURN && seat.action == 1){
             if (table.cardRoom){ //房卡房
                 if (table.lastCall == 0){ //还没有人下注
@@ -438,7 +447,7 @@ public class ZjhExtension extends IExtension {
     }
 
 
-    private void sendActionResult(ZjhSeat seat) {
+    private void sendActionResult(D seat) {
         ISFSObject object = new SFSObject();
         object.putInt("uid", seat.player.uid);
         object.putInt("action", seat.action);
@@ -458,7 +467,7 @@ public class ZjhExtension extends IExtension {
      * @param p 玩家
      */
     public synchronized void showCardRequest(Player p) {
-        ZjhSeat seat = (ZjhSeat) table.getSeat(p);
+        D seat = table.getSeat(p);
         if (seat != null && table.roundStart && !seat.seen && seat.hand.size() == 3){
             seat.seen = true;
             sendHand(seat);
@@ -467,13 +476,13 @@ public class ZjhExtension extends IExtension {
         }
     }
 
-    private void notifySeen(ZjhSeat seat) {
+    private void notifySeen(D seat) {
         ISFSObject object = new SFSObject();
         object.putInt("uid",seat.player.uid);
         send("see",object,room.getUserList());
     }
 
-    private void sendHand(ZjhSeat seat){
+    private void sendHand(D seat){
         ISFSObject object = new SFSObject();
         object.putIntArray("hand",seat.hand);
         object.putInt("type",seat.type);
@@ -486,8 +495,8 @@ public class ZjhExtension extends IExtension {
      * @param uid 被比牌的人的uid
      */
     public synchronized void vsRequest(Player p,int uid) {
-        ZjhSeat from = (ZjhSeat) table.getSeat(p);
-        ZjhSeat to = (ZjhSeat) table.getSeat(table.getPlayer(uid));
+        D from = table.getSeat(p);
+        D to = table.getSeat(table.getPlayer(uid));
         if (from != null && from.action == 1 && table.playSeat.contains(to) && to.action != 4 && to.action != 5){
             if (table.turn > 3 ){
                 if (from.type == table.SPECIAL && to.type == table.THREE_KIND){
@@ -530,8 +539,8 @@ public class ZjhExtension extends IExtension {
                     }
                 }
                 if (from.action == 5 || from.action == 6){
-                    from.sp.add(to);
-                    to.sp.add(from);
+                    from.sp.put(to.player.uid,to.hand);
+                    to.sp.put(from.player.uid,from.hand);
 
                     cancelScheduledFuture(actionScheduled);
 
@@ -558,7 +567,7 @@ public class ZjhExtension extends IExtension {
         }
     }
 
-    private void notifyVSInfo(ZjhSeat from, ZjhSeat win, ZjhSeat lose) {
+    private void notifyVSInfo(D from, D win, D lose) {
         ISFSObject object = new SFSObject();
         object.putInt("uid",from.player.uid);
         object.putInt("wid", win.player.uid);
@@ -567,8 +576,8 @@ public class ZjhExtension extends IExtension {
     }
 
     public void handRequest(Player p,int uid) {
-        ZjhSeat seat = (ZjhSeat) table.getSeat(p);
-        ZjhSeat toSee = (ZjhSeat) table.getSeat(table.getPlayer(uid));
+        D seat = table.getSeat(p);
+        D toSee = table.getSeat(table.getPlayer(uid));
         if (seat != null && toSee != null && toSee.hand.size() == 3 && p.vip){
             ISFSObject object = new SFSObject();
             object.putInt("uid",uid);

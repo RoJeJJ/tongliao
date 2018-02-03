@@ -9,6 +9,7 @@ import com.smartfoxserver.v2.entities.data.ISFSObject;
 import com.smartfoxserver.v2.entities.data.SFSObject;
 import com.smartfoxserver.v2.exceptions.SFSCreateRoomException;
 import com.smartfoxserver.v2.extensions.BaseClientRequestHandler;
+import org.apache.commons.lang.math.RandomUtils;
 import sfs2x.Constant;
 import sfs2x.master.Player;
 import sfs2x.master.tdk.TdkTable;
@@ -57,7 +58,7 @@ public class CreateRoomHandler extends BaseClientRequestHandler {
                     if (DBUtil.lockCard(player.uid, need)) {
                         CreateRoomSettings roomSettings = new CreateRoomSettings();
                         synchronized (Constant.ROOM_NAME_LOCK) {
-                            int index = new Random().nextInt(Constant.roomName.size());
+                            int index = RandomUtils.nextInt(Constant.roomName.size());
                             roomName = Constant.roomName.remove(index);
                             roomSettings.setName(String.valueOf(roomName));
                         }
@@ -96,9 +97,11 @@ public class CreateRoomHandler extends BaseClientRequestHandler {
                     break;
                 case 1://填大坑
                     Integer c = isfsObject.getInt("co");
+                    boolean lg = isfsObject.getBool("lg");
                     int err;
                     Room room = null;
-                    if (Constant.TDK_CARD_COUNT.containsKey(c))
+                    System.out.println(c);
+                    if (c == null || !Constant.TDK_CARD_COUNT.containsKey(c))
                         err = 1;
                     else {
                         int need = Constant.TDK_CARD_COUNT.get(c);
@@ -118,6 +121,8 @@ public class CreateRoomHandler extends BaseClientRequestHandler {
                                 TdkTable table = new TdkTable(1,false,true,player.uid,5,c,need);
                                 properties.put("t",table);
                                 roomSettings.setRoomProperties(properties);
+                                CreateRoomSettings.RoomExtensionSettings extensionSettings = new CreateRoomSettings.RoomExtensionSettings("tdk","tdk.TdkExtension");
+                                roomSettings.setExtension(extensionSettings);
                                 try {
                                     room = getApi().createRoom(getParentExtension().getParentZone(),roomSettings,null);
                                     err = 0;

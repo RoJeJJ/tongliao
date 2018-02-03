@@ -34,10 +34,6 @@ public abstract class ISeat {
      */
     public long score;
     /**
-     * 下一个玩家
-     */
-    public ISeat next;
-    /**
      * 当局输赢
      */
     public int lw;
@@ -62,6 +58,7 @@ public abstract class ISeat {
         object.putInt("no",no);
         object.putBool("ready",ready);
         object.putBool("off",offline);
+        object.putLong("s",score);
         return object;
     }
 
@@ -69,14 +66,18 @@ public abstract class ISeat {
         if (this.player != null)
             this.player.room = null;
         this.player = null;
+        this.empty = true;
         this.ready = false;
         this.score = 0;
         this.offline = false;
-        this.empty = true;
         disbandCode = 0;
         lw = 0;
-        next = null;
         tlw = 0;
+    }
+
+    public void initForNext(){
+        ready = false;
+        lw = 0;
     }
 
 }

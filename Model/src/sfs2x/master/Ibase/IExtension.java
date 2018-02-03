@@ -12,6 +12,7 @@ import com.smartfoxserver.v2.extensions.SFSExtension;
 import com.smartfoxserver.v2.util.TaskScheduler;
 import sfs2x.Constant;
 import sfs2x.master.Player;
+import sfs2x.master.tdk.TdkSeat;
 import sfs2x.utils.DBUtil;
 import sfs2x.utils.Utils;
 
@@ -22,12 +23,12 @@ import java.util.List;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
-public abstract class IExtension extends SFSExtension{
-    protected ITable table;
+public abstract class IExtension<D extends ISeat,T extends ITable<D>> extends SFSExtension{
+    protected T table;
     public Room room;
     private Player disbander = null;
-    protected TaskScheduler _task;
-    private ScheduledFuture autoBreakTask;
+    public TaskScheduler _task;
+    public ScheduledFuture autoBreakTask;
     @Override
     public void init() {
         room = getParentRoom();
@@ -122,12 +123,6 @@ public abstract class IExtension extends SFSExtension{
             send("GStart", object, room.getUserList());
             if (!table.gameStart)
                 table.gameStart = true;
-            for (int i = 0; i < table.playSeat.size(); i++) {
-                if (i == table.playSeat.size() - 1)
-                    table.playSeat.get(i).next = table.playSeat.get(0);
-                else
-                    table.playSeat.get(i).next = table.playSeat.get(i + 1);
-            }
         }
     }
     /**
@@ -149,7 +144,7 @@ public abstract class IExtension extends SFSExtension{
         List<User> users = room.getUserList();
         users.remove(p.user);
         if (table.isExists(p)) {//已经在房间中
-            ISeat seat = table.getSeat(p);
+            D seat = table.getSeat(p);
             seat.offline = false;
             send("detail", roomDetail(p), p.user);
             if (users.size() > 0) {
@@ -173,9 +168,9 @@ public abstract class IExtension extends SFSExtension{
             sendDisbandInfo(p);
     }
 
-    protected abstract void reconnect(ISeat seat);
+    protected abstract void reconnect(D seat);
 
-    private ISFSObject roomDetail(Player p){
+    protected ISFSObject roomDetail(Player p){
         ISFSObject object = table.toSFSObject(p);
         object.putUtfString("name",room.getName());
         return object;
@@ -250,25 +245,26 @@ public abstract class IExtension extends SFSExtension{
                     else {
                         checkReadyToStart();
                     }
-                }else {
-                    if (disbander == null){
-                        disbander = p;
-                        seat.disbandCode = 1;
-                        sendDisbandInfo(null);
-                        autoBreakTask = _task.schedule(new Runnable() {
-                            @Override
-                            public void run() {
-                                synchronized (IExtension.this){
-                                    for (ISeat s:table.seats){
-                                        if (!s.empty && s.disbandCode == 0)
-                                            s.disbandCode = 1;
-                                    }
-                                    checkBreak();
-                                }
-                            }
-                        },5*60000, TimeUnit.MILLISECONDS);
-                    }
                 }
+//                else {
+//                    if (disbander == null){
+//                        disbander = p;
+//                        seat.disbandCode = 1;
+//                        sendDisbandInfo(null);
+//                        autoBreakTask = _task.schedule(new Runnable() {
+//                            @Override
+//                            public void run() {
+//                                synchronized (IExtension.this){
+//                                    for (ISeat s:table.seats){
+//                                        if (!s.empty && s.disbandCode == 0)
+//                                            s.disbandCode = 2;
+//                                    }
+//                                    checkBreak();
+//                                }
+//                            }
+//                        },5*60000, TimeUnit.MILLISECONDS);
+//                    }
+//                }
             }
         }
         // TODO: 2018/1/13
@@ -278,7 +274,7 @@ public abstract class IExtension extends SFSExtension{
     /**
      * 检查申请解散的结果
      */
-    private void checkBreak() {
+    public void checkBreak() {
         int n = 0;//同意的人数
         int m = 0;//不同意的人数
         int l = 0;//未选择的人数
@@ -310,7 +306,7 @@ public abstract class IExtension extends SFSExtension{
      *  发送解散消息
      * @param player 接收消息的玩家,null 表示发送到房间的所有人说
      */
-    private void sendDisbandInfo(Player player){
+    public void sendDisbandInfo(Player player){
         ISFSObject object = new SFSObject();
         object.putInt("uid", disbander.uid);
         object.putUtfString("n", disbander.nick);

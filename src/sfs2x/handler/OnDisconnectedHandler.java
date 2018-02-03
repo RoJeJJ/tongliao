@@ -9,7 +9,10 @@ import com.smartfoxserver.v2.extensions.BaseServerEventHandler;
 import sfs2x.Constant;
 import sfs2x.ZoneExt;
 import sfs2x.master.Player;
+import sfs2x.utils.DBUtil;
 import sfs2x.utils.Utils;
+
+import java.util.List;
 
 public class OnDisconnectedHandler extends BaseServerEventHandler{
     @Override
@@ -18,8 +21,13 @@ public class OnDisconnectedHandler extends BaseServerEventHandler{
         Player player = Utils.getPlayer(user);
         user.getSession().removeProperty("t");
         ((ZoneExt)getParentExtension()).olp.remove(player.uid);
-        if (player.room != null && player.room.isActive()) {//在房间中
-            player.room.getExtension().handleInternalMessage("off",player);
+        DBUtil.signOut(player.uid);
+        List rooms = (List) isfsEvent.getParameter(SFSEventParam.JOINED_ROOMS);
+        if (rooms.size() > 0){
+            Room room = (Room) rooms.get(0);
+            if (room != null && room.isActive()) {//在房间中
+                room.getExtension().handleInternalMessage("off",player);
+            }
         }
     }
 }

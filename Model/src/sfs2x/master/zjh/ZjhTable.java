@@ -13,7 +13,7 @@ import sfs2x.utils.DBUtil;
 import java.util.ArrayList;
 import java.util.Collections;
 
-public class ZjhTable extends ITable {
+public class ZjhTable<T extends ZjhSeat> extends ITable<T> {
     public static final int MAX_TURN = 50;
     //牌型
     /**
@@ -55,7 +55,7 @@ public class ZjhTable extends ITable {
     /**
      * 庄家的位置
      */
-    public ZjhSeat banker;
+    public T banker;
     /**
      * 所有扑克
      */
@@ -63,7 +63,7 @@ public class ZjhTable extends ITable {
     /**
      * 当前操作的位置
      */
-    public ZjhSeat current;
+    public T current;
     /**
      * 最后下注
      */
@@ -83,7 +83,7 @@ public class ZjhTable extends ITable {
     /**
      * 上把赢了的位置
      */
-    public ZjhSeat winner;
+    public T winner;
     /**
      * 底分
      */
@@ -91,7 +91,7 @@ public class ZjhTable extends ITable {
     /**
      * 最后下注的玩家的位置
      */
-    public ZjhSeat lastAction;
+    public T lastAction;
     /**
      *  扎金花房卡房,构造方法
      * @param mod 游戏类型
@@ -101,13 +101,14 @@ public class ZjhTable extends ITable {
      * @param sf 规则,true 金花大 false 顺子大
      * @param need 游戏消耗的房卡
      */
+    @SuppressWarnings("unchecked")
     public ZjhTable(int mod, boolean aa, int owner, int person, int count, int men, boolean sf, int need){
         super(mod,aa,true,owner,person,count,need);
         this.men = men;
         this.sf = sf;
-        seats = new ZjhSeat[person];
+        seats = (T[]) new ZjhSeat[person];
         for (int i=0;i<person;i++)
-            seats[i] = new ZjhSeat(i);
+            seats[i] = (T) new ZjhSeat(i);
         banker = null;
         pokers = new ArrayList<>();
         current = null;
@@ -128,8 +129,10 @@ public class ZjhTable extends ITable {
 
     @Override
     public boolean readyToStart() {
+        if (roundStart)
+            return false;
         playSeat.clear();
-        for (ISeat s:seats){
+        for (T s:seats){
             if (!s.empty && s.ready)
                 playSeat.add(s);
         }
@@ -137,7 +140,7 @@ public class ZjhTable extends ITable {
     }
 
     public ISFSObject toSFSObject(Player p) {
-        ZjhSeat cSeat = (ZjhSeat) getSeat(p);
+        T cSeat =  getSeat(p);
         ISFSObject object =  super.toSFSObject(p);
         object.putInt("m",men);
         object.putBool("sf",sf);
@@ -146,10 +149,9 @@ public class ZjhTable extends ITable {
         object.putBool("lb",lastBlind);
         object.putInt("turn",turn);
         ISFSArray array = new SFSArray();
-        for (ISeat s:seats){
-            ZjhSeat seat = (ZjhSeat) s;
-            if (!seat.empty){
-                ISFSObject o = seat.toSFSObject(cSeat);
+        for (T s:seats){
+            if (!s.empty){
+                ISFSObject o = s.toSFSObject(cSeat);
                 if (cardRoom)
                     o.putLong("s",s.score);
                 else {
@@ -167,32 +169,39 @@ public class ZjhTable extends ITable {
         for (ISeat s:playSeat){
             s.initStartGame();
         }
-        pokers.clear();
-        for (int i = 8; i < 60; i++)
-            pokers.add(i);
         lastCall = 0;
         lastBlind = true;
         tableChips.clear();
         turn = 1;
         currentCount++;
-        ZjhSeat oSeat = (ZjhSeat) getSeat(getPlayer(owner));
+        T oSeat = getSeat(getPlayer(owner));
         if (winner != null && playSeat.contains(winner))
             banker = winner;
         else if ( oSeat != null && playSeat.contains(oSeat))
             banker = oSeat;
         else{
             int i = RandomUtils.nextInt(playSeat.size());
-            banker = (ZjhSeat) playSeat.get(i);
+            banker = playSeat.get(i);
         }
     }
     /**
      * 获取下一个叫分的玩家
      */
-    public ZjhSeat getNextActionSeat(ZjhSeat cur){
-        ZjhSeat next = (ZjhSeat) cur.next;
-        while (next.action == 4 || next.action == 5)
-            next = (ZjhSeat) next.next;
+    public T getNextActionSeat(T cur){
+        int index = playSeat.indexOf(cur);
+        T next = null;
+        while (next == null || next.action == 4 || next.action == 5)
+            next = index+1 == playSeat.size()?playSeat.get(0):playSeat.get(index+1);
         return next;
+    }
+
+    public int getAvailableCount(){
+        int n = 0;
+        for (T s:playSeat){
+            if (s.action != 4 && s.action != 5)
+                n++;
+        }
+        return n;
     }
 
     /**
@@ -200,7 +209,7 @@ public class ZjhTable extends ITable {
      *
      * @param seat 计算该位置的牌型
      */
-    public void analyzeType(ZjhSeat seat) {
+    public void analyzeType(T seat) {
         if (seat.hand.size() != 3)
             return;
         ArrayList<Integer> hand = new ArrayList<>(seat.hand);
@@ -285,17 +294,29 @@ public class ZjhTable extends ITable {
         turn = 0;
         playSeat.clear();
         roundStart = false;
-        for (ISeat s:seats){
+        for (ZjhSeat s:seats){
             if (!s.empty){
-                ZjhSeat seat = (ZjhSeat) s;
-                seat.ready = false;
-                seat.lw = 0;
-                seat.hand.clear();
-                seat.action = 0;
-                seat.chips.clear();
-                seat.seen = false;
-                seat.sp.clear();
+                s.ready = false;
+                s.lw = 0;
+                s.hand.clear();
+                s.action = 0;
+                s.chips.clear();
+                s.seen = false;
+                s.sp.clear();
             }
+        }
+    }
+
+    public void initCard(){
+        pokers.clear();
+        for (int i = 8; i < 60; i++)
+            pokers.add(i);
+        //洗牌
+        for (int i = 0; i < pokers.size(); i++) {
+            int k = RandomUtils.nextInt(pokers.size());
+            int temp = pokers.get(i);
+            pokers.set(i, pokers.get(k));
+            pokers.set(k, temp);
         }
     }
 }

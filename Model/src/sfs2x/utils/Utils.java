@@ -8,6 +8,7 @@ import sfs2x.master.Ibase.ITable;
 import sfs2x.master.Player;
 
 public class Utils {
+    @SuppressWarnings("unchecked")
     public static <T extends ITable>T getTable(Room room){
         Object object = room.getProperty("t");
         return  (T) object;

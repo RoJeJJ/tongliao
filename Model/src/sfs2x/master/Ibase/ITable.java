@@ -6,10 +6,11 @@ import com.smartfoxserver.v2.entities.data.SFSObject;
 import sfs2x.master.Player;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 
-public abstract class ITable {
+public abstract class ITable<T extends ISeat> {
     /**
      *唯一标识
      */
@@ -61,17 +62,17 @@ public abstract class ITable {
     /**
      * 所有座位
      */
-    public  ISeat[] seats;
+    public  T[] seats;
     /**
      * 当局游戏中的位置
      */
-    public List<ISeat> playSeat;
+    public List<T> playSeat;
     public StringBuffer record;
     /**
      *  房卡房构造方法
      * @param mod 游戏类型
      */
-    public ITable(int mod, boolean aa, boolean cardRoom,int owner, int person,int count, int need){
+    public ITable(int mod, boolean aa, boolean cardRoom, int owner, int person, int count, int need){
         this.mod = mod;
         this.aa = aa;
         this.person = person;
@@ -92,7 +93,7 @@ public abstract class ITable {
      */
     public int curPerson(){
         int n = 0;
-        for (ISeat seat:seats){
+        for (T seat:seats){
             if (!seat.empty)
                 n++;
         }
@@ -105,10 +106,11 @@ public abstract class ITable {
      * @param p 玩家
      * @return 座位
      */
-    public ISeat getSeat(Player p){
-        for (ISeat s:seats){
-            if (!s.empty && s.player == p)
+    public T getSeat(Player p){
+        for (T s:seats){
+            if (!s.empty && s.player == p) {
                 return s;
+            }
         }
         return null;
     }
@@ -119,7 +121,7 @@ public abstract class ITable {
      */
     public abstract boolean readyToStart();
     public boolean isExists(Player p){
-        for (ISeat seat:seats){
+        for (T seat:seats){
             if (!seat.empty && seat.player == p)
                 return true;
         }
@@ -146,7 +148,7 @@ public abstract class ITable {
     }
 
     public void join(Player p){
-        for (ISeat s:seats){
+        for (T s:seats){
             if (s.empty) {
                 s.player = p;
                 s.empty = false;
@@ -156,9 +158,12 @@ public abstract class ITable {
     }
 
     public abstract void initStartGame();
+    public void initForNext(){
+        roundStart = false;
+    }
 
-    public synchronized Player getPlayer(int uid){
-        for (ISeat s:seats){
+    public Player getPlayer(int uid){
+        for (T s:seats){
             if (!s.empty && s.player.uid == uid)
                 return s.player;
         }
